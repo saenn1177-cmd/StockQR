@@ -1,1 +1,164 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Stock QR System</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+  :root{--bg:#f5f3ef;--card:#fff;--text:#1a1a1a;--text2:#6b6b6b;--accent:#2d6a4f;--accent-l:#e8f5e9;--warn:#b5451b;--warn-l:#fdf0ec;--border:#e2e0db;--mono:'IBM Plex Mono',monospace;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Sarabun',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+  header{background:var(--text);color:#fff;padding:18px 24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;}
+  .h1{font-size:17px;font-weight:600;}.h2{font-size:11px;color:#aaa;margin-top:2px;font-family:var(--mono);}
+  .badge{font-size:11px;padding:5px 12px;border-radius:20px;font-family:var(--mono);display:flex;align-items:center;gap:6px;}
+  .badge.loading{background:#333;color:#aaa;}.badge.ok{background:#1a3d2b;color:#74c99a;}.badge.err{background:#3d1a1a;color:#e87c7c;}
+  .dot{width:7px;height:7px;border-radius:50%;background:currentColor;}.pulse{animation:pulse 1.5s infinite;}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+  .toolbar{background:var(--card);border-bottom:1px solid var(--border);padding:12px 24px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+  .fbtn{font-family:'Sarabun',sans-serif;font-size:12px;padding:6px 14px;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--text2);cursor:pointer;transition:all .15s;}
+  .fbtn.active{background:var(--text);color:#fff;border-color:var(--text);}
+  .cinfo{margin-left:auto;font-size:12px;color:var(--text2);font-family:var(--mono);}
+  main{padding:24px;}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:16px;}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;transition:transform .15s,box-shadow .15s;}
+  .card:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.08);}
+  .card.low{border-color:#f0c4b4;}
+  .ch{padding:14px 16px 10px;border-bottom:1px solid var(--border);}
+  .card.low .ch{background:var(--warn-l);border-color:#f0c4b4;}
+  .cid{font-family:var(--mono);font-size:10px;color:var(--text2);margin-bottom:3px;}
+  .cname{font-size:14px;font-weight:600;}.ccat{font-size:11px;color:var(--text2);}
+  .qrarea{padding:16px;display:flex;justify-content:center;align-items:center;background:#fafafa;min-height:180px;}
+  .qrarea img{border-radius:6px;display:block;}
+  .cf{padding:12px 16px;display:flex;align-items:center;justify-content:space-between;border-top:1px solid var(--border);}
+  .qnum{font-size:22px;font-weight:700;font-family:var(--mono);line-height:1;}
+  .qunit{font-size:11px;color:var(--text2);margin-top:1px;}
+  .pill{font-size:11px;padding:4px 10px;border-radius:20px;font-weight:500;}
+  .pill-ok{background:var(--accent-l);color:var(--accent);}.pill-low{background:var(--warn-l);color:var(--warn);}
+  .dlbtn{display:block;width:calc(100% - 32px);margin:0 16px 14px;padding:7px;text-align:center;font-family:'Sarabun',sans-serif;font-size:12px;border:1px solid var(--border);border-radius:8px;background:transparent;color:var(--text2);cursor:pointer;text-decoration:none;transition:background .15s;}
+  .dlbtn:hover{background:var(--bg);}
+  .empty{grid-column:1/-1;text-align:center;padding:60px 20px;color:var(--text2);}
+  .empty .icon{font-size:40px;margin-bottom:12px;}
+  .sk{animation:shimmer 1.5s infinite linear;background:linear-gradient(90deg,#eee 25%,#f5f5f5 50%,#eee 75%);background-size:200% 100%;border-radius:8px;height:320px;}
+  @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+  @media print{header,.toolbar,.dlbtn{display:none!important;}.card{break-inside:avoid;}}
+  @media(max-width:500px){main{padding:16px;}.grid{grid-template-columns:repeat(2,1fr);gap:10px;}}
+</style>
+</head>
+<body>
+<header>
+  <div><div class="h1">📦 Stock QR System</div><div class="h2">ระบบจัดการสต๊อกของใช้สิ้นเปลือง</div></div>
+  <div id="badge" class="badge loading"><div class="dot pulse"></div><span>กำลังโหลด...</span></div>
+</header>
+<div class="toolbar">
+  <button class="fbtn active" onclick="setFilter('all',this)">ทั้งหมด</button>
+  <button class="fbtn" onclick="setFilter('low',this)">⚠ ต้องซื้อเพิ่ม</button>
+  <button class="fbtn" onclick="setFilter('ok',this)">✓ เพียงพอ</button>
+  <button class="fbtn" onclick="window.print()">🖨 พิมพ์ QR</button>
+  <span class="cinfo" id="cinfo">—</span>
+</div>
+<main><div class="grid" id="grid">
+  <div class="sk"></div><div class="sk"></div><div class="sk"></div><div class="sk"></div>
+</div></main>
+<script>
+const API_KEY = 'AIzaSyA46g_8FQERBCruZlsKabHvI8x0611G2ng';
+const SHEET_ID = '1B-GEpdnJCZBf8Qvai-zFmMXpNielOeT9eGHt2Rn0oP0';
+const SHEET_GID = '1889282511';
+const BASE_URL = 'https://docs.google.com/spreadsheets/d/' + SHEET_ID + '/edit?usp=sharing';
+let allItems = [], curFilter = 'all';
+
+async function fetchData() {
+  // ใช้ gid (sheet id number) แทนชื่อ sheet เพื่อหลีกเลี่ยงปัญหา encoding ภาษาไทย
+  const url = 'https://docs.google.com/spreadsheets/d/' + SHEET_ID + '/export?format=csv&gid=' + SHEET_GID;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+  const text = await res.text();
+  return parseCSV(text);
+}
+
+function parseCSV(text) {
+  const lines = text.split('\n');
+  return lines.map(line => {
+    const cols = [];
+    let cur = '', inQ = false;
+    for (let i = 0; i < line.length; i++) {
+      if (line[i] === '"') { inQ = !inQ; }
+      else if (line[i] === ',' && !inQ) { cols.push(cur.trim()); cur = ''; }
+      else { cur += line[i]; }
+    }
+    cols.push(cur.trim());
+    return cols;
+  });
+}
+
+function parseItems(rows) {
+  return rows.filter(r => r[0] && !isNaN(Number(r[0])) && Number(r[0]) > 0).map(r => ({
+    id: Number(r[0]), name: r[1]||'', cat: r[2]||'',
+    qty: Number(r[3])||0, unit: r[4]||'', note: r[5]||''
+  }));
+}
+
+function makeQRUrl(text, size) {
+  return 'https://api.qrserver.com/v1/create-qr-code/?size=' + size + 'x' + size + '&ecc=M&data=' + encodeURIComponent(text);
+}
+
+function setFilter(f, btn) {
+  curFilter = f;
+  document.querySelectorAll('.fbtn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderGrid();
+}
+
+function renderGrid() {
+  const grid = document.getElementById('grid');
+  const list = curFilter==='all' ? allItems : curFilter==='low' ? allItems.filter(i=>i.qty<5) : allItems.filter(i=>i.qty>=5);
+  document.getElementById('cinfo').textContent = list.length + ' รายการ';
+  if (!list.length) {
+    grid.innerHTML = '<div class="empty"><div class="icon">📭</div><p>ไม่มีรายการ</p></div>';
+    return;
+  }
+  grid.innerHTML = '';
+  list.forEach(item => {
+    const low = item.qty < 5;
+    const qrText = 'ชื่อ: ' + item.name + '\nหมวด: ' + item.cat + '\nจำนวน: ' + item.qty + ' ' + item.unit + '\nลิงก์: ' + BASE_URL;
+    const qrSrc = makeQRUrl(qrText, 160);
+    const qrDl  = makeQRUrl(qrText, 500);
+    const card = document.createElement('div');
+    card.className = 'card' + (low ? ' low' : '');
+    card.innerHTML =
+      '<div class="ch">' +
+        '<div class="cid">#' + String(item.id).padStart(3,'0') + '</div>' +
+        '<div class="cname">' + item.name + '</div>' +
+        '<div class="ccat">' + item.cat + '</div>' +
+      '</div>' +
+      '<div class="qrarea">' +
+        '<img src="' + qrSrc + '" width="160" height="160" alt="QR ' + item.name + '" loading="lazy"/>' +
+      '</div>' +
+      '<div class="cf">' +
+        '<div><div class="qnum">' + item.qty + '</div><div class="qunit">' + item.unit + '</div></div>' +
+        '<span class="pill ' + (low?'pill-low':'pill-ok') + '">' + (low?'⚠ ต้องซื้อ':'✓ เพียงพอ') + '</span>' +
+      '</div>' +
+      '<a class="dlbtn" href="' + qrDl + '" target="_blank" download="QR_' + item.name + '.png">⬇ ดาวน์โหลด QR</a>';
+    grid.appendChild(card);
+  });
+}
+
+async function init() {
+  const badge = document.getElementById('badge');
+  try {
+    const rows = await fetchData();
+    allItems = parseItems(rows);
+    badge.className = 'badge ok';
+    badge.innerHTML = '<div class="dot"></div><span>โหลดแล้ว ' + allItems.length + ' รายการ</span>';
+    renderGrid();
+  } catch(e) {
+    badge.className = 'badge err';
+    badge.innerHTML = '<div class="dot"></div><span>' + e.message + '</span>';
+    document.getElementById('grid').innerHTML = '<div class="empty"><div class="icon">⚠️</div><p>' + e.message + '</p></div>';
+  }
+}
+init();
+</script>
+</body>
+</html>
 
