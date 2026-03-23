@@ -244,14 +244,14 @@
 <script>
 const API_KEY = 'AIzaSyA46g_8FQERBCruZlsKabHvI8x0611G2ng';
 const SHEET_ID = '1LyIDRD9KYqZj5a4TQ-_Mr7K0R5vHf_hu';
-const SHEET_NAME = 'สต๊อกของใช้สิ้นเปลือง';
+const SHEET_NAME = '%E0%B8%AA%E0%B8%95%E0%B9%8A%E0%B8%AD%E0%B8%81%E0%B8%82%E0%B8%AD%E0%B8%87%E0%B9%83%E0%B8%8A%E0%B9%89%E0%B8%AA%E0%B8%B4%E0%B9%89%E0%B8%99%E0%B9%80%E0%B8%9B%E0%B8%A5%E0%B8%B7%E0%B8%AD%E0%B8%87';
 const BASE_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/edit?usp=sharing`;
 
 let allItems = [];
 let currentFilter = 'all';
 
 async function fetchData() {
-  const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${encodeURIComponent(SHEET_NAME)}?key=${API_KEY}`;
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${SHEET_NAME}?key=${API_KEY}`;
   const res = await fetch(url);
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   const data = await res.json();
