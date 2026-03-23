@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Stock QR System</title>
 <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet"/>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <style>
   :root{--bg:#f5f3ef;--card:#fff;--text:#1a1a1a;--text2:#6b6b6b;--accent:#2d6a4f;--accent-l:#e8f5e9;--warn:#b5451b;--warn-l:#fdf0ec;--border:#e2e0db;--mono:'IBM Plex Mono',monospace;}
   *{box-sizing:border-box;margin:0;padding:0;}
@@ -29,8 +28,8 @@
   .card.low .ch{background:var(--warn-l);border-color:#f0c4b4;}
   .cid{font-family:var(--mono);font-size:10px;color:var(--text2);margin-bottom:3px;}
   .cname{font-size:14px;font-weight:600;}.ccat{font-size:11px;color:var(--text2);}
-  .qrarea{padding:16px;display:flex;justify-content:center;background:#fafafa;}
-  .qrarea>div{border-radius:6px;overflow:hidden;}
+  .qrarea{padding:16px;display:flex;justify-content:center;align-items:center;background:#fafafa;min-height:180px;}
+  .qrarea img{border-radius:6px;display:block;}
   .cf{padding:12px 16px;display:flex;align-items:center;justify-content:space-between;border-top:1px solid var(--border);}
   .qnum{font-size:22px;font-weight:700;font-family:var(--mono);line-height:1;}
   .qunit{font-size:11px;color:var(--text2);margin-top:1px;}
@@ -68,7 +67,6 @@ const BASE_URL = 'https://docs.google.com/spreadsheets/d/' + SHEET_ID + '/edit?u
 let allItems = [], curFilter = 'all';
 
 async function fetchData() {
-  // ระบุชื่อ sheet แบบ encoded + range
   const range = '%E0%B8%AA%E0%B8%95%E0%B9%8A%E0%B8%AD%E0%B8%81%E0%B8%82%E0%B8%AD%E0%B8%87%E0%B9%83%E0%B8%8A%E0%B9%89%E0%B8%AA%E0%B8%B4%E0%B9%89%E0%B8%99%E0%B9%80%E0%B8%9B%E0%B8%A5%E0%B8%B7%E0%B8%AD%E0%B8%87!A1:G50';
   const url = 'https://sheets.googleapis.com/v4/spreadsheets/' + SHEET_ID + '/values/' + range + '?key=' + API_KEY;
   const res = await fetch(url);
@@ -84,6 +82,10 @@ function parseItems(rows) {
     id: Number(r[0]), name: r[1]||'', cat: r[2]||'',
     qty: Number(r[3])||0, unit: r[4]||'', note: r[5]||''
   }));
+}
+
+function makeQRUrl(text, size) {
+  return 'https://api.qrserver.com/v1/create-qr-code/?size=' + size + 'x' + size + '&ecc=M&data=' + encodeURIComponent(text);
 }
 
 function setFilter(f, btn) {
@@ -105,6 +107,8 @@ function renderGrid() {
   list.forEach(item => {
     const low = item.qty < 5;
     const qrText = 'ชื่อ: ' + item.name + '\nหมวด: ' + item.cat + '\nจำนวน: ' + item.qty + ' ' + item.unit + '\nลิงก์: ' + BASE_URL;
+    const qrSrc = makeQRUrl(qrText, 160);
+    const qrDl  = makeQRUrl(qrText, 500);
     const card = document.createElement('div');
     card.className = 'card' + (low ? ' low' : '');
     card.innerHTML =
@@ -113,30 +117,15 @@ function renderGrid() {
         '<div class="cname">' + item.name + '</div>' +
         '<div class="ccat">' + item.cat + '</div>' +
       '</div>' +
-      '<div class="qrarea"><div id="q' + item.id + '"></div></div>' +
+      '<div class="qrarea">' +
+        '<img src="' + qrSrc + '" width="160" height="160" alt="QR ' + item.name + '" loading="lazy"/>' +
+      '</div>' +
       '<div class="cf">' +
         '<div><div class="qnum">' + item.qty + '</div><div class="qunit">' + item.unit + '</div></div>' +
         '<span class="pill ' + (low?'pill-low':'pill-ok') + '">' + (low?'⚠ ต้องซื้อ':'✓ เพียงพอ') + '</span>' +
       '</div>' +
-      '<a class="dlbtn" id="dl' + item.id + '" href="#">⬇ ดาวน์โหลด QR</a>';
+      '<a class="dlbtn" href="' + qrDl + '" target="_blank" download="QR_' + item.name + '.png">⬇ ดาวน์โหลด QR</a>';
     grid.appendChild(card);
-    setTimeout(() => {
-      const el = document.getElementById('q' + item.id);
-      if (!el) return;
-      new QRCode(el, {text:qrText, width:150, height:150, colorDark:'#1a1a1a', colorLight:'#fafafa', correctLevel:QRCode.CorrectLevel.M});
-      setTimeout(() => {
-        const canvas = el.querySelector('canvas');
-        if (canvas) {
-          document.getElementById('dl' + item.id).addEventListener('click', e => {
-            e.preventDefault();
-            const a = document.createElement('a');
-            a.download = 'QR_' + item.name + '.png';
-            a.href = canvas.toDataURL('image/png');
-            a.click();
-          });
-        }
-      }, 300);
-    }, 50);
   });
 }
 
